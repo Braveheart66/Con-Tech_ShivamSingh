@@ -24,6 +24,10 @@ function asStringArray(value: unknown): string[] {
     : [];
 }
 
+function asNumber(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
 function normalizeAnalyzeResponse(payload: unknown): AnalyzeResponse {
   const response = (payload ?? {}) as Partial<AnalyzeResponse>;
 
@@ -33,7 +37,10 @@ function normalizeAnalyzeResponse(payload: unknown): AnalyzeResponse {
     extracted_text: asNonEmptyString(response.extracted_text),
     plain_english: asNonEmptyString(response.plain_english),
     key_points: asStringArray(response.key_points),
-    risk_level: asNonEmptyString(response.risk_level, "low"),
+    risk_score: asNumber(response.risk_score, 0),
+    risk_level: asNonEmptyString(response.risk_level, "Low Risk"),
+    reasons: asStringArray(response.reasons),
+    flags: asStringArray(response.flags),
     warnings: asStringArray(response.warnings)
   };
 }
@@ -138,31 +145,13 @@ export async function analyzeImage(file: File): Promise<AnalyzeResponse> {
 }
 
 export async function scrapeUrl(url: string): Promise<AnalyzeResponse> {
-  const endpoint = `${API_BASE_URL}/scrape-url`;
-
-  const jsonResponse = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ url })
-  });
-
-  if (jsonResponse.ok) {
-    return parseAnalyzeResponse(jsonResponse);
-  }
-
-  if (![400, 415, 422].includes(jsonResponse.status)) {
-    throw await buildApiError(jsonResponse);
-  }
-
   const formData = new FormData();
   formData.append("url", url);
 
-  const formResponse = await fetch(endpoint, {
+  const response = await fetch(`${API_BASE_URL}/analyze`, {
     method: "POST",
     body: formData
   });
 
-  return parseAnalyzeResponse(formResponse);
+  return parseAnalyzeResponse(response);
 }

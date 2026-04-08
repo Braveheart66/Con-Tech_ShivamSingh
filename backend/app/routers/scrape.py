@@ -31,7 +31,10 @@ def scrape_url(payload: ScrapeUrlRequest) -> ScrapeUrlResponse:
             clauses=clauses,
             plain_english=simplified.get("plain_english", ""),
             key_points=simplified.get("key_points", []),
-            risk_level=simplified.get("risk_level", "low"),
+            risk_score=int(simplified.get("risk_score", 0)),
+            risk_level=simplified.get("risk_level", "Low Risk"),
+            reasons=simplified.get("reasons", []),
+            flags=simplified.get("flags", []),
             warnings=simplified.get("warnings", []),
         )
 

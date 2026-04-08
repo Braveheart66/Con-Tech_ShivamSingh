@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.analyze import router as analyze_router
 from app.routers.scrape import router as scrape_router
+from app.services.simplify import print_model_runtime_info
 
 
 app = FastAPI(
@@ -24,6 +25,11 @@ app.add_middleware(
 
 app.include_router(analyze_router)
 app.include_router(scrape_router)
+
+
+@app.on_event("startup")
+def startup_event() -> None:
+    print_model_runtime_info()
 
 
 @app.get("/health")

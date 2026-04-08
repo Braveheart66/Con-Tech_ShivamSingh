@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-export default function Header() {
+interface HeaderProps {
+  onDemoMode?: () => void;
+  isDemoRunning?: boolean;
+}
+
+export default function Header({ onDemoMode, isDemoRunning = false }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -39,19 +44,31 @@ export default function Header() {
             </svg>
           </span>
           <div>
-            <p className="font-display text-2xl font-semibold leading-none text-[color:var(--text-gold)]">UnLegalize</p>
+            <p className="font-display text-2xl font-semibold leading-none text-[color:var(--text-gold)]">ClauseClarity</p>
             <p className="text-[11px] font-light tracking-[0.08em] text-[color:var(--text-secondary)]">
-              AI Legal Simplifier
+              Built for Kalpathon 2.0
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="rounded-full border border-[color:var(--border-mid)] px-3 py-1 text-[11px] font-medium text-[color:var(--text-gold)]">
-            ⚖ Indian Tenancy Law
+          <span className="hidden rounded-full border border-[color:var(--border-mid)] px-3 py-1 text-[11px] font-medium text-[color:var(--text-gold)] md:inline-flex">
+            Powered by fine-tuned TinyLlama
           </span>
-          <span className="rounded-full border border-[color:var(--border-dark)] px-3 py-1 text-[10px] font-medium text-[color:var(--text-secondary)]">
-            Gemma 3 270M · LoRA Fine-tuned
+
+          {onDemoMode ? (
+            <button
+              type="button"
+              onClick={onDemoMode}
+              disabled={isDemoRunning}
+              className="rounded-full border border-[color:var(--gold-bright)] bg-[rgba(240,180,41,0.12)] px-3 py-1 text-[11px] font-semibold text-[color:var(--text-gold)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isDemoRunning ? "Demo Running..." : "Demo Mode"}
+            </button>
+          ) : null}
+
+          <span className="hidden rounded-full border border-[rgba(95,217,138,0.45)] bg-[rgba(95,217,138,0.12)] px-3 py-1 text-[10px] font-medium text-[color:var(--green-text)] lg:inline-flex">
+            Model loaded locally - no internet required
           </span>
         </div>
       </div>

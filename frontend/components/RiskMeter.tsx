@@ -6,16 +6,17 @@ import RiskBadge from "@/components/RiskBadge";
 
 interface RiskMeterProps {
   level: string;
+  score?: number;
 }
 
 function levelToScore(level: string): number {
   const normalized = level.toLowerCase();
 
-  if (normalized === "high") {
+  if (normalized === "high" || normalized.includes("high")) {
     return 90;
   }
 
-  if (normalized === "medium") {
+  if (normalized === "medium" || normalized.includes("medium")) {
     return 65;
   }
 
@@ -25,19 +26,19 @@ function levelToScore(level: string): number {
 function levelToColor(level: string): string {
   const normalized = level.toLowerCase();
 
-  if (normalized === "high") {
+  if (normalized === "high" || normalized.includes("high")) {
     return "var(--risk-high)";
   }
 
-  if (normalized === "medium") {
+  if (normalized === "medium" || normalized.includes("medium")) {
     return "var(--risk-mid)";
   }
 
   return "var(--risk-low)";
 }
 
-export default function RiskMeter({ level }: RiskMeterProps) {
-  const score = levelToScore(level);
+export default function RiskMeter({ level, score }: RiskMeterProps) {
+  const resolvedScore = typeof score === "number" ? Math.max(0, Math.min(100, score)) : levelToScore(level);
   const color = useMemo(() => levelToColor(level), [level]);
 
   const radius = 58;
@@ -58,8 +59,8 @@ export default function RiskMeter({ level }: RiskMeterProps) {
   });
 
   useEffect(() => {
-    spring.set(score);
-  }, [score, spring]);
+    spring.set(resolvedScore);
+  }, [resolvedScore, spring]);
 
   return (
     <div className="flex flex-col items-center gap-3">

@@ -17,6 +17,7 @@ export function useAnalyze() {
   const [urlInput, setUrlInput] = useState("");
   const [textInput, setTextInput] = useState("");
   const [inputPulseKey, setInputPulseKey] = useState(0);
+  const [isDemoRunning, setIsDemoRunning] = useState(false);
 
   const clearError = () => setError(null);
   const setErrorMessage = (message: string) => setError({ message });
@@ -83,6 +84,69 @@ export function useAnalyze() {
     return withSubmission(() => scrapeUrl(trimmed));
   };
 
+  const runDemoMode = async () => {
+    if (isDemoRunning) {
+      return;
+    }
+
+    const demos: Array<{ clause: string; output: string }> = [
+      {
+        clause: "The lessee shall not sublet or assign the premises without prior written consent of the lessor.",
+        output: "You cannot give your flat to someone else without your landlord's written permission."
+      },
+      {
+        clause: "The lessor reserves the right to terminate this agreement with 30 days notice in case of breach.",
+        output: "Your landlord can end this agreement by giving you 30 days written notice."
+      },
+      {
+        clause: "The entire security deposit may be forfeited at the sole discretion of the Licensor.",
+        output: "Your landlord can keep your entire deposit for any reason they choose."
+      }
+    ];
+
+    setIsDemoRunning(true);
+    setMode("text");
+    setError(null);
+
+    try {
+      for (const demo of demos) {
+        setTextInput(demo.clause);
+        setIsLoading(true);
+        setInputPulseKey((value) => value + 1);
+
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, 600);
+        });
+
+        setResult({
+          source_type: "text",
+          file_name: null,
+          extracted_text: demo.clause,
+          plain_english: demo.output,
+          key_points: [demo.clause],
+          risk_score: demo.clause.toLowerCase().includes("forfeit") ? 80 : demo.clause.toLowerCase().includes("terminate") ? 45 : 25,
+          risk_level: demo.clause.toLowerCase().includes("forfeit") ? "High Risk" : demo.clause.toLowerCase().includes("terminate") ? "Medium Risk" : "Low Risk",
+          reasons: demo.clause.toLowerCase().includes("forfeit")
+            ? ["Deposit taken without reason", "Landlord has unchecked power"]
+            : demo.clause.toLowerCase().includes("terminate")
+              ? ["Agreement can end early", "Breaking rules has consequences"]
+              : ["Restriction on subletting found"],
+          flags: [],
+          warnings: []
+        });
+
+        setIsLoading(false);
+
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, 3000);
+        });
+      }
+    } finally {
+      setIsLoading(false);
+      setIsDemoRunning(false);
+    }
+  };
+
   return {
     activeTab,
     setMode,
@@ -101,6 +165,8 @@ export function useAnalyze() {
     submitText,
     submitFile,
     submitUrl,
-    inputPulseKey
+    inputPulseKey,
+    runDemoMode,
+    isDemoRunning
   };
 }

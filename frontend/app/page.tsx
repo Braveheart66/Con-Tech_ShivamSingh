@@ -83,7 +83,9 @@ export default function HomePage() {
     submitText,
     submitFile,
     submitUrl,
-    inputPulseKey
+    inputPulseKey,
+    runDemoMode,
+    isDemoRunning
   } = useAnalyze();
 
   const inputSectionRef = useRef<HTMLElement | null>(null);
@@ -177,7 +179,7 @@ export default function HomePage() {
       <ParticleField />
 
       <div className="relative z-10">
-        <Header />
+        <Header onDemoMode={runDemoMode} isDemoRunning={isDemoRunning} />
 
         <AnimatePresence>
           {showWorkbenchLabel ? (
@@ -235,7 +237,7 @@ export default function HomePage() {
                 "⚖ Indian Tenancy Law",
                 "📄 PDF · Image OCR · URL Scraping",
                 "🔒 Runs Locally - No Data Leaves",
-                "🤖 Gemma 3 270M Fine-tuned"
+                "🤖 TinyLlama + LoRA Fine-tuned"
               ].map((item, index) => (
                 <span key={item} className="inline-flex items-center gap-2">
                   <span>{item}</span>
@@ -247,7 +249,7 @@ export default function HomePage() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-8">
               <HeroCounter value={4} suffix=" modes" label="Input Sources" />
               <span className="hidden h-12 w-px bg-[color:var(--border-dark)] md:block" />
-              <HeroCounter value={270} suffix="M" label="Parameter Model" />
+              <HeroCounter value={1100} suffix="M" label="Parameter Model" />
               <span className="hidden h-12 w-px bg-[color:var(--border-dark)] md:block" />
               <HeroCounter value={6} suffix=" types" label="Clause Categories" />
             </div>

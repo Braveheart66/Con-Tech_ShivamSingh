@@ -76,6 +76,9 @@ async def analyze_input(
         extracted_text=cleaned_text,
         plain_english=simplification.get("plain_english", ""),
         key_points=simplification.get("key_points", []),
-        risk_level=simplification.get("risk_level", "low"),
+        risk_score=int(simplification.get("risk_score", 0)),
+        risk_level=simplification.get("risk_level", "Low Risk"),
+        reasons=simplification.get("reasons", []),
+        flags=simplification.get("flags", []),
         warnings=warnings,
     )

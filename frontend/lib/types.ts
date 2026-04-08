@@ -8,7 +8,10 @@ export interface AnalyzeResponse {
   extracted_text: string;
   plain_english: string;
   key_points: string[];
+  risk_score: number;
   risk_level: RiskLevel;
+  reasons: string[];
+  flags: string[];
   warnings: string[];
 }
 

@@ -9,7 +9,10 @@ class AnalysisResponse(BaseModel):
     extracted_text: str
     plain_english: str
     key_points: list[str] = Field(default_factory=list)
-    risk_level: Literal["low", "medium", "high"] = "low"
+    risk_score: int = 0
+    risk_level: str = "Low Risk"
+    reasons: list[str] = Field(default_factory=list)
+    flags: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
 
 
@@ -24,5 +27,8 @@ class ScrapeUrlResponse(BaseModel):
     clauses: list[str] = Field(default_factory=list)
     plain_english: Optional[str] = None
     key_points: list[str] = Field(default_factory=list)
-    risk_level: Optional[Literal["low", "medium", "high"]] = None
+    risk_score: int = 0
+    risk_level: Optional[str] = None
+    reasons: list[str] = Field(default_factory=list)
+    flags: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)

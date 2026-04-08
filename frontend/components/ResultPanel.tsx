@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { CheckCircle2, File, FileImage, FileText, Link2, Sparkles } from "lucide-react";
+import { CheckCircle2, File, FileImage, FileText, Link2, Sparkles, ThumbsDown, ThumbsUp, ArrowRight } from "lucide-react";
 import KeyPointCard from "@/components/KeyPointCard";
 import RiskMeter from "@/components/RiskMeter";
 import WarningCard from "@/components/WarningCard";
@@ -21,7 +21,7 @@ function sourceMeta(sourceType: string) {
     return { label: "Image", icon: FileImage };
   }
 
-  if (sourceType === "url") {
+  if (sourceType === "url" || sourceType === "web_url") {
     return { label: "URL", icon: Link2 };
   }
 
@@ -30,6 +30,7 @@ function sourceMeta(sourceType: string) {
 
 export default function ResultPanel({ result }: ResultPanelProps) {
   const [typedExtractedText, setTypedExtractedText] = useState("");
+  const [feedback, setFeedback] = useState<"up" | "down" | null>(null);
   const extractedRef = useRef<HTMLElement | null>(null);
   const { scrollYProgress } = useScroll({ target: extractedRef, offset: ["start end", "end start"] });
   const extractedY = useTransform(scrollYProgress, [0, 1], [0, -30]);
@@ -59,7 +60,16 @@ export default function ResultPanel({ result }: ResultPanelProps) {
   }, [result.extracted_text]);
 
   const source = useMemo(() => sourceMeta(result.source_type), [result.source_type]);
+  const wordCount = useMemo(() => {
+    return result.plain_english.trim() ? result.plain_english.trim().split(/\s+/).length : 0;
+  }, [result.plain_english]);
   const SourceIcon = source.icon;
+
+  const reasonClass = result.risk_level.toLowerCase().includes("high")
+    ? "text-[color:var(--risk-high)]"
+    : result.risk_level.toLowerCase().includes("medium")
+      ? "text-[color:var(--risk-mid)]"
+      : "text-[color:var(--risk-low)]";
 
   return (
     <motion.section
@@ -97,6 +107,22 @@ export default function ResultPanel({ result }: ResultPanelProps) {
       </div>
 
       <div className="space-y-4">
+        <article className="grid items-stretch gap-3 rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-surface)] p-4 md:grid-cols-[1fr_auto_1fr]">
+          <div className="rounded-lg border border-[color:var(--border-dark)] bg-[rgba(255,255,255,0.04)] p-3">
+            <p className="mb-2 text-[11px] uppercase tracking-[0.08em] text-[color:var(--text-secondary)]">Before</p>
+            <p className="mono text-xs leading-6 text-[color:var(--text-secondary)]">{result.extracted_text}</p>
+          </div>
+
+          <div className="grid place-items-center">
+            <ArrowRight className="h-5 w-5 text-[color:var(--text-gold)]" />
+          </div>
+
+          <div className="rounded-lg border border-[color:var(--border-mid)] bg-white p-3">
+            <p className="mb-2 text-[11px] uppercase tracking-[0.08em] text-[color:var(--bg-void)]">After</p>
+            <p className="text-lg font-semibold leading-7 text-[color:var(--bg-void)]">{result.plain_english}</p>
+          </div>
+        </article>
+
         <article className="relative overflow-hidden rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-surface)] p-5">
           <span className="pointer-events-none absolute -left-6 -top-8 font-display text-[200px] leading-none text-white/5">
             "
@@ -109,15 +135,50 @@ export default function ResultPanel({ result }: ResultPanelProps) {
               initial={{ opacity: 0, filter: "blur(4px)" }}
               animate={{ opacity: 1, filter: "blur(0px)" }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="mt-3 font-display text-[20px] leading-9 text-[color:var(--text-primary)]"
+              className="mt-3 border-l-4 border-[color:var(--risk-low)] pl-4 text-2xl font-bold leading-9 text-[color:var(--text-primary)]"
             >
               {result.plain_english || "No plain-English explanation available."}
             </motion.p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-[color:var(--border-mid)] bg-[rgba(95,217,138,0.12)] px-3 py-1 text-xs text-[color:var(--green-text)]">
+                {wordCount} words
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setFeedback("up")}
+                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs ${feedback === "up" ? "border-[color:var(--risk-low)] text-[color:var(--risk-low)]" : "border-[color:var(--border-mid)] text-[color:var(--text-secondary)]"}`}
+              >
+                <ThumbsUp size={14} />
+                Helpful
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFeedback("down")}
+                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs ${feedback === "down" ? "border-[color:var(--risk-high)] text-[color:var(--risk-high)]" : "border-[color:var(--border-mid)] text-[color:var(--text-secondary)]"}`}
+              >
+                <ThumbsDown size={14} />
+                Not helpful
+              </button>
+            </div>
           </div>
         </article>
 
         <article className="rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-surface)] p-4">
-          <RiskMeter level={result.risk_level} />
+          <RiskMeter level={result.risk_level} score={result.risk_score} />
+          <div className="mt-3 text-center">
+            <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${reasonClass} border-current bg-[rgba(255,255,255,0.04)]`}>
+              {result.risk_level}
+            </span>
+          </div>
+
+          <ul className="mt-4 list-disc space-y-1 pl-5 text-sm">
+            {result.reasons.length ? result.reasons.map((reason, index) => (
+              <li key={`${reason}-${index}`} className={reasonClass}>{reason}</li>
+            )) : <li className="text-[color:var(--text-secondary)]">No specific risk triggers detected.</li>}
+          </ul>
         </article>
 
         <article id="result-key-points" className="rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-surface)] p-4">
