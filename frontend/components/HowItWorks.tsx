@@ -1,211 +1,518 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Brain, FileText, ShieldCheck } from "lucide-react";
-import { motion, useScroll, useSpring, useTransform } from "framer-motion";
-import { useRef } from "react";
-import ScrollReveal from "@/components/ScrollReveal";
-import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 
-const steps = [
+const STEPS = [
   {
     number: "01",
-    icon: FileText,
-    accentColor: "var(--gold-bright)",
-    accentLine: "var(--gold-mid)",
+    Icon: FileText,
+    accentColor: "#F0B429",
+    accentGlow: "rgba(240,180,41,0.15)",
+    lineColor: "#C9960C",
     title: "Share Your Clause",
-    body: "Paste text, upload a PDF, photograph your stamp paper, or drop a URL. UnLegalize handles any format - even handwritten agreements.",
+    body: "Paste text, upload a PDF, photograph your stamp paper, or drop a URL. UnLegalize handles any format - even handwritten agreements on plain paper.",
     tags: ["Plain Text", "PDF Upload", "Image / OCR", "URL Scraping"]
   },
   {
     number: "02",
-    icon: Brain,
-    accentColor: "var(--teal-bright)",
-    accentLine: "var(--teal-mid)",
+    Icon: Brain,
+    accentColor: "#0FADA3",
+    accentGlow: "rgba(15,173,163,0.15)",
+    lineColor: "#0D4A4A",
     title: "AI Decodes the Legalese",
-    body: "Gemma 3 270M, fine-tuned using LoRA on India-specific rental and leave-and-license agreements, extracts each clause, scores risk 0-100, and translates dense legalese into plain, actionable English.",
+    body: "Gemma 3 270M, fine-tuned with LoRA on India-specific rental and leave-and-license data, extracts every clause, scores risk, and translates dense legalese into plain actionable English.",
     tags: ["Gemma 3 270M", "LoRA Fine-tuned", "India Law Data", "Risk Scoring"]
   },
   {
     number: "03",
-    icon: ShieldCheck,
-    accentColor: "var(--risk-low)",
-    accentLine: "var(--green-mid)",
+    Icon: ShieldCheck,
+    accentColor: "#2DB55D",
+    accentGlow: "rgba(45,181,93,0.15)",
+    lineColor: "#1A6B35",
     title: "Understand. Negotiate. Sign.",
-    body: "Know exactly what you're agreeing to. Spot risky clauses. Ask the right questions. Never sign blind again.",
+    body: "Know exactly what you are agreeing to. Spot the risky clauses before your landlord does. Walk into negotiations with confidence. Never sign blind again.",
     tags: ["Plain English", "Risk Warnings", "Key Clauses", "Instant Results"]
   }
 ] as const;
 
-export default function HowItWorks() {
-  const isMobile = useMediaQuery("(max-width: 1024px)");
+const cardVariants = {
+  enter: {
+    opacity: 0,
+    y: 48,
+    scale: 0.97,
+    filter: "blur(8px)"
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.55,
+      ease: [0.16, 1, 0.3, 1] as [number, number, number, number]
+    }
+  },
+  exit: {
+    opacity: 0,
+    y: -48,
+    scale: 0.97,
+    filter: "blur(8px)",
+    transition: {
+      duration: 0.4,
+      ease: [0.7, 0, 0.84, 0] as [number, number, number, number]
+    }
+  }
+};
 
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end end"]
-  });
+export function HowItWorks() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isFixed, setIsFixed] = useState(false);
+  const [fixedTop, setFixedTop] = useState(false);
+  const [fixedBottom, setFixedBottom] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 60,
-    damping: 20,
-    restDelta: 0.001
-  });
+  useEffect(() => {
+    const check = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
 
-  const card1Y = useTransform(smoothProgress, [0, 0.25, 0.4], ["0%", "0%", "-110%"]);
-  const card1O = useTransform(smoothProgress, [0, 0.05, 0.25, 0.4], [0, 1, 1, 0]);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
-  const card2Y = useTransform(smoothProgress, [0.28, 0.4, 0.58, 0.72], ["110%", "0%", "0%", "-110%"]);
-  const card2O = useTransform(smoothProgress, [0.28, 0.4, 0.58, 0.72], [0, 1, 1, 0]);
+  useEffect(() => {
+    const handleScroll = () => {
+      const section = sectionRef.current;
+      if (!section) {
+        return;
+      }
 
-  const card3Y = useTransform(smoothProgress, [0.6, 0.72, 1], ["110%", "0%", "0%"]);
-  const card3O = useTransform(smoothProgress, [0.6, 0.72], [0, 1]);
+      const rect = section.getBoundingClientRect();
+      const sectionTop = rect.top;
+      const sectionHeight = section.offsetHeight;
+      const viewportHeight = window.innerHeight;
+      const scrolled = -sectionTop;
+      const scrollable = Math.max(1, sectionHeight - viewportHeight);
+      const progress = Math.max(0, Math.min(1, scrolled / scrollable));
 
-  const dot1 = useTransform(smoothProgress, [0, 0.33], [1, 1]);
-  const dot2 = useTransform(smoothProgress, [0.28, 0.45], [0, 1]);
-  const dot3 = useTransform(smoothProgress, [0.6, 0.75], [0, 1]);
+      setScrollProgress(progress);
 
-  const lineScaleY = useTransform(smoothProgress, [0, 1], [0, 1]);
-  const nudgeOpacity = useTransform(smoothProgress, [0, 0.1, 0.85, 1], [1, 1, 1, 0]);
+      const sectionInView = sectionTop <= 0 && rect.bottom >= viewportHeight;
+      setIsFixed(sectionInView);
+      setFixedTop(rect.bottom < viewportHeight);
+      setFixedBottom(sectionTop > 0);
+
+      if (progress < 0.333) {
+        setActiveIndex(0);
+      } else if (progress < 0.666) {
+        setActiveIndex(1);
+      } else {
+        setActiveIndex(2);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, []);
 
   if (isMobile) {
-    return <MobileHowItWorks />;
+    return (
+      <section id="how-it-works" style={{ padding: "80px 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: "56px" }}>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "11px",
+              color: "var(--text-tertiary)",
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              marginBottom: "12px"
+            }}
+          >
+            The Process
+          </p>
+          <h2
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "36px",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+              margin: 0
+            }}
+          >
+            How UnLegalize Works
+          </h2>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            maxWidth: "600px",
+            margin: "0 auto"
+          }}
+        >
+          {STEPS.map((step, i) => (
+            <motion.div
+              key={step.number}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{
+                duration: 0.5,
+                delay: i * 0.12,
+                ease: [0.16, 1, 0.3, 1]
+              }}
+            >
+              <StepCard step={step} />
+            </motion.div>
+          ))}
+        </div>
+      </section>
+    );
   }
 
   return (
-    <section id="how-it-works" ref={sectionRef} className="relative h-[400vh]">
-      <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(15,74,74,0.18),rgba(8,11,9,0)_30%,rgba(8,11,9,0)_70%,rgba(201,150,12,0.1))]" />
-
-        <div className="pointer-events-none absolute inset-x-0 top-[10%] z-10 text-center">
-          <p className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-tertiary)]">The Process</p>
-          <h2 className="font-display text-[clamp(36px,5vw,56px)] font-bold text-[color:var(--text-primary)]">How UnLegalize Works</h2>
-        </div>
-
-        <div className="pointer-events-none absolute left-[8%] top-1/2 z-10 hidden h-[200px] -translate-y-1/2 lg:flex">
-          <div className="relative h-full w-[2px] rounded-[1px] bg-[color:var(--border-dark)]">
-            <motion.div
+    <section
+      id="how-it-works"
+      ref={sectionRef}
+      style={{
+        height: "300vh",
+        position: "relative"
+      }}
+    >
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 20,
+          pointerEvents: "none",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "0 24px",
+          background: "var(--bg-void)",
+          opacity: isFixed ? 1 : 0,
+          visibility: isFixed ? "visible" : "hidden",
+          transition: "opacity 0.4s ease, visibility 0.4s ease",
+          transform: fixedTop ? "translateY(-10px)" : fixedBottom ? "translateY(10px)" : "translateY(0px)"
+        }}
+      >
+        <div style={{ pointerEvents: "auto", width: "100%", maxWidth: "780px" }}>
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <p
               style={{
-                scaleY: lineScaleY,
-                transformOrigin: "top",
-                willChange: "transform"
+                fontFamily: "var(--font-body)",
+                fontSize: "11px",
+                color: "var(--text-tertiary)",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                marginBottom: "14px"
               }}
-              className="absolute left-0 top-0 h-full w-full rounded-[1px] bg-[linear-gradient(to_bottom,var(--gold-bright),var(--teal-bright))]"
-            />
+            >
+              The Process
+            </p>
+            <h2
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "clamp(32px, 5vw, 52px)",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                margin: 0,
+                lineHeight: 1.1
+              }}
+            >
+              How UnLegalize Works
+            </h2>
+          </div>
 
-            {[dot1, dot2, dot3].map((opacityValue, index) => (
-              <motion.div
-                key={`dot-${steps[index].number}`}
-                style={{ opacity: opacityValue, top: `${index * 50}%` }}
-                className="absolute left-1/2 h-[10px] w-[10px] -translate-x-1/2 rounded-full border-2 border-[color:var(--bg-void)] bg-[color:var(--gold-bright)] shadow-[0_0_12px_var(--gold-bright)]"
+          <div style={{ position: "relative", width: "100%" }}>
+            <AnimatePresence mode="wait">
+              <motion.div key={activeIndex} variants={cardVariants} initial="enter" animate="visible" exit="exit">
+                <StepCard step={STEPS[activeIndex]} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "12px",
+              marginTop: "40px"
+            }}
+          >
+            {STEPS.map((step, i) => (
+              <div
+                key={step.number}
+                style={{
+                  width: i === activeIndex ? "28px" : "8px",
+                  height: "8px",
+                  borderRadius: "4px",
+                  background: i === activeIndex ? step.accentColor : "var(--border-mid)",
+                  boxShadow: i === activeIndex ? `0 0 12px ${step.accentColor}` : "none",
+                  transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
+                }}
               />
             ))}
           </div>
 
-          {steps.map((step, index) => (
-            <div
-              key={`label-${step.number}`}
-              className="absolute left-5 -translate-y-1/2 font-mono text-[11px] text-[color:var(--text-tertiary)]"
-              style={{ top: `${index * 50}%` }}
+          <div style={{ textAlign: "center", marginTop: "20px" }}>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "11px",
+                color: "var(--text-tertiary)",
+                letterSpacing: "0.1em",
+                opacity: 0.6
+              }}
             >
-              {step.number}
-            </div>
-          ))}
-        </div>
-
-        <div className="relative z-[2] mx-auto h-[420px] w-full max-w-[680px] px-6">
-          <motion.div style={{ y: card1Y, opacity: card1O }} className="absolute inset-0">
-            <StepCard step={steps[0]} />
-          </motion.div>
-
-          <motion.div style={{ y: card2Y, opacity: card2O }} className="absolute inset-0">
-            <StepCard step={steps[1]} />
-          </motion.div>
-
-          <motion.div style={{ y: card3Y, opacity: card3O }} className="absolute inset-0">
-            <StepCard step={steps[2]} />
-          </motion.div>
-        </div>
-
-        <motion.div style={{ opacity: nudgeOpacity }} className="pointer-events-none absolute bottom-[5%] left-1/2 z-10 -translate-x-1/2">
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-[11px] uppercase tracking-[0.15em] text-[color:var(--text-tertiary)]">Keep scrolling</span>
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-              className="h-8 w-px bg-[color:var(--border-mid)]"
-            />
+              {activeIndex + 1} of {STEPS.length}
+            </p>
           </div>
-        </motion.div>
+
+          {activeIndex < STEPS.length - 1 ? (
+            <div
+              style={{
+                position: "absolute",
+                bottom: "-80px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "8px",
+                opacity: 1 - scrollProgress * 0.5
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "10px",
+                  color: "var(--text-tertiary)",
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  margin: 0
+                }}
+              >
+                Scroll to continue
+              </p>
+              <motion.div
+                animate={{ y: [0, 6, 0] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                style={{
+                  width: "1px",
+                  height: "28px",
+                  background: "linear-gradient(to bottom, var(--border-mid), transparent)"
+                }}
+              />
+            </div>
+          ) : null}
+
+          <div
+            className="hidden lg:block"
+            style={{
+              position: "absolute",
+              left: "-80px",
+              top: "50%",
+              transform: "translateY(-50%)"
+            }}
+          >
+            <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
+              {STEPS.map((step, i) => (
+                <div key={step.number} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div
+                    style={{
+                      width: "10px",
+                      height: "10px",
+                      borderRadius: "50%",
+                      background: i === activeIndex ? step.accentColor : "var(--border-dark)",
+                      border: `1px solid ${i === activeIndex ? step.accentColor : "var(--border-mid)"}`,
+                      boxShadow: i === activeIndex ? `0 0 10px ${step.accentColor}` : "none",
+                      transition: "all 0.4s ease",
+                      flexShrink: 0
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "11px",
+                      color: i === activeIndex ? "var(--text-secondary)" : "var(--text-tertiary)",
+                      transition: "color 0.4s ease"
+                    }}
+                  >
+                    {step.number}
+                  </span>
+                </div>
+              ))}
+
+              <div
+                style={{
+                  position: "absolute",
+                  left: "4px",
+                  top: "10px",
+                  width: "1px",
+                  height: "calc(100% - 10px)",
+                  background: "var(--border-dark)"
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: `${(activeIndex / (STEPS.length - 1)) * 100}%`,
+                    background: STEPS[activeIndex].accentColor,
+                    transition: "height 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+                    boxShadow: `0 0 6px ${STEPS[activeIndex].accentColor}`
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
-function StepCard({ step }: { step: (typeof steps)[number] }) {
-  const Icon = step.icon;
+function StepCard({ step }: { step: (typeof STEPS)[number] }) {
+  const { Icon, number, accentColor, accentGlow, lineColor, title, body, tags } = step;
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-[24px] border border-[color:var(--border-dark)] bg-[image:var(--gradient-card)] p-12 shadow-[var(--glow-card)]">
-      <div className="pointer-events-none absolute right-8 top-[-20px] select-none font-display text-[160px] font-bold leading-none text-[color:var(--text-primary)] opacity-[0.03]">
-        {step.number}
+    <div
+      style={{
+        width: "100%",
+        background: "linear-gradient(145deg, rgba(20,29,23,0.95) 0%, rgba(13,20,16,0.98) 100%)",
+        border: "1px solid var(--border-dark)",
+        borderRadius: "24px",
+        padding: "clamp(32px, 5vw, 56px)",
+        position: "relative",
+        overflow: "hidden",
+        boxShadow: `0 24px 64px rgba(0,0,0,0.6), 0 1px 0 ${accentColor}20 inset`
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: "-16px",
+          right: "24px",
+          fontFamily: "var(--font-display)",
+          fontSize: "clamp(100px, 15vw, 160px)",
+          fontWeight: 700,
+          color: "var(--text-primary)",
+          opacity: 0.04,
+          lineHeight: 1,
+          userSelect: "none",
+          pointerEvents: "none"
+        }}
+      >
+        {number}
       </div>
 
-      <div className="flex h-full flex-col justify-center gap-6">
-        <div
-          className="grid h-16 w-16 place-items-center rounded-2xl border bg-[color:var(--bg-raised)]"
-          style={{ borderColor: `${step.accentColor}40` }}
-        >
-          <Icon size={28} color={step.accentColor} />
-        </div>
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "200px",
+          height: "200px",
+          background: `radial-gradient(circle at 0% 0%, ${accentColor}12 0%, transparent 70%)`,
+          pointerEvents: "none"
+        }}
+      />
 
-        <div
-          className="h-[2px] w-10 rounded-[1px]"
-          style={{ background: step.accentLine, boxShadow: `0 0 8px ${step.accentColor}` }}
-        />
+      <div
+        style={{
+          width: "64px",
+          height: "64px",
+          borderRadius: "16px",
+          background: accentGlow,
+          border: `1px solid ${accentColor}30`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: "20px"
+        }}
+      >
+        <Icon size={26} color={accentColor} strokeWidth={1.5} />
+      </div>
 
-        <h3 className="font-display text-[clamp(28px,4vw,40px)] font-bold leading-[1.2] text-[color:var(--text-primary)]">
-          {step.title}
-        </h3>
+      <div
+        style={{
+          width: "36px",
+          height: "2px",
+          background: `linear-gradient(90deg, ${accentColor}, ${lineColor})`,
+          borderRadius: "1px",
+          marginBottom: "24px",
+          boxShadow: `0 0 10px ${accentColor}80`
+        }}
+      />
 
-        <p className="max-w-[480px] text-base font-light leading-[1.7] text-[color:var(--text-secondary)]">
-          {step.body}
-        </p>
+      <h3
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: "clamp(28px, 4.5vw, 42px)",
+          fontWeight: 700,
+          color: "var(--text-primary)",
+          lineHeight: 1.15,
+          margin: "0 0 16px 0"
+        }}
+      >
+        {title}
+      </h3>
 
-        <div className="flex flex-wrap gap-2">
-          {step.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-[20px] border px-3 py-1 text-[11px]"
-              style={{
-                color: step.accentColor,
-                borderColor: `${step.accentColor}40`,
-                background: `${step.accentColor}08`
-              }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+      <p
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: "16px",
+          fontWeight: 300,
+          color: "var(--text-secondary)",
+          lineHeight: 1.75,
+          margin: "0 0 28px 0",
+          maxWidth: "520px"
+        }}
+      >
+        {body}
+      </p>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "11px",
+              fontWeight: 400,
+              color: accentColor,
+              border: `1px solid ${accentColor}35`,
+              borderRadius: "20px",
+              padding: "5px 14px",
+              background: `${accentColor}08`,
+              letterSpacing: "0.02em"
+            }}
+          >
+            {tag}
+          </span>
+        ))}
       </div>
     </div>
   );
 }
 
-function MobileHowItWorks() {
-  return (
-    <section id="how-it-works" className="px-6 py-20">
-      <div className="mb-16 text-center">
-        <p className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-tertiary)]">The Process</p>
-        <h2 className="font-display text-4xl font-bold text-[color:var(--text-primary)]">How UnLegalize Works</h2>
-      </div>
-
-      <div className="mx-auto flex max-w-[600px] flex-col gap-6">
-        {steps.map((step, index) => (
-          <ScrollReveal key={step.number} delay={index * 0.15}>
-            <StepCard step={step} />
-          </ScrollReveal>
-        ))}
-      </div>
-    </section>
-  );
-}
+export default HowItWorks;
