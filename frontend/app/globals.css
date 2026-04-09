@@ -486,3 +486,30 @@ pre,
     display: none;
   }
 }
+
+/* Result panel typing cursor blink */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Result panel two-column responsive */
+@media (max-width: 767px) {
+  .result-two-col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Terminal scroll area scrollbar */
+.terminal-scroll::-webkit-scrollbar {
+  width: 2px;
+}
+
+.terminal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.terminal-scroll::-webkit-scrollbar-thumb {
+  background: var(--gold-dim);
+  border-radius: 2px;
+}

@@ -102,9 +102,6 @@ export default function RiskMeter({ level, score }: RiskMeterProps) {
       </div>
 
       <RiskBadge level={level} />
-      <p className="mt-1 text-center text-[10px] text-[color:var(--text-tertiary)]">
-        Risk level assessed by fine-tuned model
-      </p>
     </div>
   );
 }

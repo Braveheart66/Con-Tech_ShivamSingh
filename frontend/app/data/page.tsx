@@ -39,7 +39,7 @@ export default function DataPage() {
       <div className="mx-auto max-w-6xl space-y-8">
         <header className="rounded-2xl border border-[color:var(--border-mid)] bg-[color:var(--bg-surface)] p-6">
           <p className="text-xs uppercase tracking-[0.12em] text-[color:var(--text-tertiary)]">Data Quality Dashboard</p>
-          <h1 className="mt-2 font-display text-4xl font-semibold text-[color:var(--text-gold)]">ClauseClarity Dataset Metrics</h1>
+          <h1 className="mt-2 font-display text-4xl font-semibold text-[color:var(--text-gold)]">UnLegalize Dataset Metrics</h1>
           <p className="mt-2 text-sm text-[color:var(--text-secondary)]">Built for Kalpathon 2.0 - AI/SLM Fine-Tuning Track</p>
         </header>
 

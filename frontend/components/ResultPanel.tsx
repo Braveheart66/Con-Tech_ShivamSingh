@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { CheckCircle2, File, FileImage, FileText, Link2, Sparkles, ThumbsDown, ThumbsUp, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { CheckCircle2, File, FileImage, FileText, Link2, Sparkles } from "lucide-react";
 import KeyPointCard from "@/components/KeyPointCard";
 import RiskMeter from "@/components/RiskMeter";
 import WarningCard from "@/components/WarningCard";
@@ -14,199 +14,441 @@ interface ResultPanelProps {
 
 function sourceMeta(sourceType: string) {
   if (sourceType === "pdf") {
-    return { label: "PDF", icon: File };
+    return { label: "PDF", icon: "📁", IconComponent: File };
   }
 
   if (sourceType === "image") {
-    return { label: "Image", icon: FileImage };
+    return { label: "Image", icon: "🖼", IconComponent: FileImage };
   }
 
   if (sourceType === "url" || sourceType === "web_url") {
-    return { label: "URL", icon: Link2 };
+    return { label: "URL", icon: "🔗", IconComponent: Link2 };
   }
 
-  return { label: "Text", icon: FileText };
+  return { label: "Text", icon: "📄", IconComponent: FileText };
+}
+
+function riskColor(level: string): string {
+  const normalized = level.toLowerCase();
+  if (normalized.includes("high")) return "var(--risk-high)";
+  if (normalized.includes("medium")) return "var(--risk-mid)";
+  return "var(--risk-low)";
 }
 
 export default function ResultPanel({ result }: ResultPanelProps) {
-  const [typedExtractedText, setTypedExtractedText] = useState("");
-  const [feedback, setFeedback] = useState<"up" | "down" | null>(null);
-  const extractedRef = useRef<HTMLElement | null>(null);
-  const { scrollYProgress } = useScroll({ target: extractedRef, offset: ["start end", "end start"] });
-  const extractedY = useTransform(scrollYProgress, [0, 1], [0, -30]);
-
-  useEffect(() => {
-    const source = result.extracted_text ?? "";
-    let index = 0;
-
-    setTypedExtractedText("");
-
-    if (!source.length) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      index += 1;
-      setTypedExtractedText(source.slice(0, index));
-
-      if (index >= source.length) {
-        window.clearInterval(timer);
-      }
-    }, 8);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [result.extracted_text]);
+  const [typedText, setTypedText] = useState("");
+  const [isTypingDone, setIsTypingDone] = useState(false);
 
   const source = useMemo(() => sourceMeta(result.source_type), [result.source_type]);
   const wordCount = useMemo(() => {
     return result.plain_english.trim() ? result.plain_english.trim().split(/\s+/).length : 0;
   }, [result.plain_english]);
-  const SourceIcon = source.icon;
 
-  const reasonClass = result.risk_level.toLowerCase().includes("high")
-    ? "text-[color:var(--risk-high)]"
-    : result.risk_level.toLowerCase().includes("medium")
-      ? "text-[color:var(--risk-mid)]"
-      : "text-[color:var(--risk-low)]";
+  const color = useMemo(() => riskColor(result.risk_level), [result.risk_level]);
+
+  // Typing animation for extracted text
+  useEffect(() => {
+    const raw = result.extracted_text ?? "";
+    const cap = 800;
+    const displaySource = raw.length > cap ? raw.slice(0, cap) : raw;
+
+    let index = 0;
+    setTypedText("");
+    setIsTypingDone(false);
+
+    if (!displaySource.length) {
+      setIsTypingDone(true);
+      return;
+    }
+
+    const delayTimer = window.setTimeout(() => {
+      const interval = window.setInterval(() => {
+        index += 1;
+        setTypedText(displaySource.slice(0, index));
+
+        if (index >= displaySource.length) {
+          window.clearInterval(interval);
+          setIsTypingDone(true);
+        }
+      }, 6);
+
+      return () => window.clearInterval(interval);
+    }, 400);
+
+    return () => {
+      window.clearTimeout(delayTimer);
+    };
+  }, [result.extracted_text]);
+
+  const truncated = (result.extracted_text ?? "").length > 800;
 
   return (
-    <motion.section
-      id="result-panel"
-      initial={{ opacity: 0, y: 30 }}
+    <motion.div
+      initial={{ opacity: 0, y: 32 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="card-noir grid gap-5 p-5 lg:grid-cols-[1fr_1.2fr] lg:p-8"
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className="space-y-4">
-        <div className="rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-surface)] p-4">
-          <p className="text-[11px] uppercase tracking-[0.08em] text-[color:var(--text-secondary)]">Source</p>
-          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[color:var(--border-mid)] bg-[rgba(240,180,41,0.08)] px-3 py-1 text-xs text-[color:var(--text-gold)]">
-            <SourceIcon size={14} />
-            {source.label}
-          </div>
-          {result.file_name ? (
-            <p className="mono mt-2 truncate text-xs text-[color:var(--text-secondary)]">{result.file_name}</p>
-          ) : null}
+      {/* ====== SECTION 1: HERO BANNER — Plain English ====== */}
+      <div
+        style={{
+          width: "100%",
+          padding: "40px 48px",
+          background: "linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-surface) 100%)",
+          border: "1px solid var(--border-dark)",
+          borderRadius: 20,
+          position: "relative",
+          overflow: "hidden",
+          marginBottom: 20,
+        }}
+      >
+        {/* Corner accent — top-right radial glow */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            width: 300,
+            height: 300,
+            background: "radial-gradient(circle at 100% 0%, var(--gold-glow) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Large decorative quote mark */}
+        <span
+          style={{
+            position: "absolute",
+            top: 16,
+            left: 40,
+            fontFamily: "var(--font-display), Georgia, serif",
+            fontSize: 180,
+            fontWeight: 300,
+            color: "var(--text-primary)",
+            opacity: 0.025,
+            pointerEvents: "none",
+            userSelect: "none",
+            lineHeight: 1,
+            zIndex: 0,
+          }}
+          aria-hidden
+        >
+          &ldquo;
+        </span>
+
+        {/* Source badge row */}
+        <div style={{ marginBottom: 24, position: "relative", zIndex: 1 }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              background: "var(--bg-raised)",
+              border: "1px solid var(--border-mid)",
+              borderRadius: 999,
+              padding: "4px 12px",
+              fontFamily: "var(--font-body), sans-serif",
+              fontSize: 11,
+              color: "var(--text-secondary)",
+            }}
+          >
+            <span>{source.icon}</span>
+            <span>{source.label}</span>
+            {result.file_name ? (
+              <span style={{ color: "var(--text-tertiary)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                · {result.file_name.length > 30 ? result.file_name.slice(0, 30) + "…" : result.file_name}
+              </span>
+            ) : null}
+          </span>
         </div>
 
-        <motion.article
-          ref={extractedRef}
-          style={{ y: extractedY, willChange: "transform" }}
-          className="relative rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-void)] p-4"
+        {/* Label */}
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <p
+            style={{
+              fontFamily: "var(--font-body), sans-serif",
+              fontWeight: 500,
+              fontSize: 11,
+              color: "var(--text-gold)",
+              textTransform: "uppercase",
+              letterSpacing: "0.15em",
+              marginBottom: 8,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Sparkles size={12} /> PLAIN ENGLISH
+          </p>
+          <div
+            style={{
+              width: 24,
+              height: 1,
+              background: "var(--gold-mid)",
+              marginBottom: 16,
+            }}
+          />
+        </div>
+
+        {/* THE MAIN TRANSLATION TEXT */}
+        <motion.p
+          initial={{ opacity: 0, filter: "blur(6px)", y: 12 }}
+          animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+          style={{
+            fontFamily: "var(--font-display), Georgia, serif",
+            fontWeight: 400,
+            fontSize: "clamp(24px, 3.5vw, 36px)",
+            color: "var(--text-primary)",
+            lineHeight: 1.55,
+            maxWidth: 720,
+            position: "relative",
+            zIndex: 1,
+            margin: 0,
+          }}
         >
-          <span className="absolute right-3 top-3 rounded-full border border-[rgba(95,217,138,0.25)] bg-[rgba(95,217,138,0.08)] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-[color:var(--green-text)]">
-            Extracted
+          {result.plain_english || "No plain-English explanation available."}
+        </motion.p>
+
+        {/* Word count pill */}
+        <div style={{ marginTop: 20, position: "relative", zIndex: 1 }}>
+          <span
+            style={{
+              fontFamily: "var(--font-body), sans-serif",
+              fontWeight: 300,
+              fontSize: 12,
+              color: "var(--text-tertiary)",
+            }}
+          >
+            {wordCount} words
           </span>
-          <p className="mb-3 text-[11px] uppercase tracking-[0.08em] text-[color:var(--text-secondary)]">Original Legal Text</p>
-          <div className="mono max-h-[300px] overflow-y-auto rounded-lg border border-[color:var(--border-dark)] bg-[rgba(0,0,0,0.25)] p-3 text-[12px] leading-7 text-[color:var(--text-secondary)]">
-            {typedExtractedText || "No extracted text returned."}
-          </div>
-        </motion.article>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        <article className="grid items-stretch gap-3 rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-surface)] p-4 md:grid-cols-[1fr_auto_1fr]">
-          <div className="rounded-lg border border-[color:var(--border-dark)] bg-[rgba(255,255,255,0.04)] p-3">
-            <p className="mb-2 text-[11px] uppercase tracking-[0.08em] text-[color:var(--text-secondary)]">Before</p>
-            <p className="mono text-xs leading-6 text-[color:var(--text-secondary)]">{result.extracted_text}</p>
-          </div>
-
-          <div className="grid place-items-center">
-            <ArrowRight className="h-5 w-5 text-[color:var(--text-gold)]" />
-          </div>
-
-          <div className="rounded-lg border border-[color:var(--border-mid)] bg-white p-3">
-            <p className="mb-2 text-[11px] uppercase tracking-[0.08em] text-[color:var(--bg-void)]">After</p>
-            <p className="text-lg font-semibold leading-7 text-[color:var(--bg-void)]">{result.plain_english}</p>
-          </div>
-        </article>
-
-        <article className="relative overflow-hidden rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-surface)] p-5">
-          <span className="pointer-events-none absolute -left-6 -top-8 font-display text-[200px] leading-none text-white/5">
-            "
-          </span>
-          <div className="relative z-[1]">
-            <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--text-gold)]">
-              <Sparkles size={12} /> Plain English
-            </p>
-            <motion.p
-              initial={{ opacity: 0, filter: "blur(4px)" }}
-              animate={{ opacity: 1, filter: "blur(0px)" }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="mt-3 border-l-4 border-[color:var(--risk-low)] pl-4 text-2xl font-bold leading-9 text-[color:var(--text-primary)]"
+      {/* ====== SECTION 2: TWO-COLUMN ROW — Original Text + Risk Panel ====== */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 20,
+          marginBottom: 20,
+        }}
+        className="result-two-col"
+      >
+        {/* LEFT — Original Legal Text terminal */}
+        <div
+          style={{
+            background: "var(--bg-void)",
+            border: "1px solid var(--border-dark)",
+            borderRadius: 16,
+            padding: 24,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Header row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <span
+              style={{
+                fontFamily: "var(--font-body), sans-serif",
+                fontWeight: 500,
+                fontSize: 10,
+                color: "var(--text-tertiary)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
             >
-              {result.plain_english || "No plain-English explanation available."}
-            </motion.p>
-
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-[color:var(--border-mid)] bg-[rgba(95,217,138,0.12)] px-3 py-1 text-xs text-[color:var(--green-text)]">
-                {wordCount} words
-              </span>
-
-              <button
-                type="button"
-                onClick={() => setFeedback("up")}
-                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs ${feedback === "up" ? "border-[color:var(--risk-low)] text-[color:var(--risk-low)]" : "border-[color:var(--border-mid)] text-[color:var(--text-secondary)]"}`}
-              >
-                <ThumbsUp size={14} />
-                Helpful
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setFeedback("down")}
-                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs ${feedback === "down" ? "border-[color:var(--risk-high)] text-[color:var(--risk-high)]" : "border-[color:var(--border-mid)] text-[color:var(--text-secondary)]"}`}
-              >
-                <ThumbsDown size={14} />
-                Not helpful
-              </button>
-            </div>
-          </div>
-        </article>
-
-        <article className="rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-surface)] p-4">
-          <RiskMeter level={result.risk_level} score={result.risk_score} />
-          <div className="mt-3 text-center">
-            <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${reasonClass} border-current bg-[rgba(255,255,255,0.04)]`}>
-              {result.risk_level}
+              ORIGINAL LEGAL TEXT
+            </span>
+            <span
+              style={{
+                background: "var(--green-deep)",
+                color: "var(--green-text)",
+                fontSize: 10,
+                fontFamily: "var(--font-body), sans-serif",
+                padding: "2px 8px",
+                borderRadius: 999,
+              }}
+            >
+              EXTRACTED
             </span>
           </div>
 
-          <ul className="mt-4 list-disc space-y-1 pl-5 text-sm">
-            {result.reasons.length ? result.reasons.map((reason, index) => (
-              <li key={`${reason}-${index}`} className={reasonClass}>{reason}</li>
-            )) : <li className="text-[color:var(--text-secondary)]">No specific risk triggers detected.</li>}
-          </ul>
-        </article>
-
-        <article id="result-key-points" className="rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-surface)] p-4">
-          <p className="text-[11px] uppercase tracking-[0.08em] text-[color:var(--text-secondary)]">Key Clauses</p>
-          <div className="mt-3 space-y-2">
-            {result.key_points.length ? (
-              result.key_points.map((point, index) => <KeyPointCard key={`${point}-${index}`} point={point} index={index} />)
-            ) : (
-              <p className="text-sm text-[color:var(--text-secondary)]">No key points detected.</p>
+          {/* Scrollable text area */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              maxHeight: 240,
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 12,
+              color: "var(--text-secondary)",
+              lineHeight: 1.8,
+            }}
+            className="terminal-scroll"
+          >
+            {typedText || "No extracted text returned."}
+            {!isTypingDone && typedText.length > 0 && (
+              <span
+                style={{
+                  color: "var(--gold-bright)",
+                  animation: "blink 0.8s step-end infinite",
+                }}
+              >
+                |
+              </span>
+            )}
+            {isTypingDone && truncated && (
+              <span style={{ color: "var(--text-tertiary)", fontStyle: "italic" }}>
+                {" "}... [text truncated for display]
+              </span>
             )}
           </div>
-        </article>
+        </div>
 
-        <article id="result-warnings" className="rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-surface)] p-4">
-          <p className="text-[11px] uppercase tracking-[0.08em] text-[color:var(--risk-high)]">Warnings</p>
-          {result.warnings.length ? (
-            <div className="mt-3 space-y-2">
+        {/* RIGHT — Risk Panel */}
+        <div
+          style={{
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border-dark)",
+            borderRadius: 16,
+            padding: "32px 24px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 0,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Background glow */}
+          <div
+            style={{
+              position: "absolute",
+              top: -40,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 200,
+              height: 200,
+              background: `radial-gradient(circle, color-mix(in srgb, ${color} 7%, transparent) 0%, transparent 70%)`,
+              pointerEvents: "none",
+            }}
+          />
+
+          {/* Risk Meter */}
+          <RiskMeter level={result.risk_level} score={result.risk_score} />
+
+          {/* Footer note */}
+          <p
+            style={{
+              fontFamily: "var(--font-body), sans-serif",
+              fontWeight: 300,
+              fontSize: 10,
+              color: "var(--text-tertiary)",
+              textAlign: "center",
+              marginTop: "auto",
+              paddingTop: 12,
+            }}
+          >
+            Risk assessed by Gemma 3 270M · LoRA fine-tuned
+          </p>
+        </div>
+      </div>
+
+      {/* ====== SECTION 3: KEY CLAUSES — Full width card grid ====== */}
+      <div style={{ marginBottom: 20 }}>
+        <p
+          style={{
+            fontFamily: "var(--font-body), sans-serif",
+            fontWeight: 500,
+            fontSize: 11,
+            color: "var(--text-tertiary)",
+            textTransform: "uppercase",
+            letterSpacing: "0.15em",
+            marginBottom: 16,
+          }}
+        >
+          KEY CLAUSES
+        </p>
+
+        {result.key_points.length ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: 12,
+            }}
+          >
+            {result.key_points.map((point, index) => (
+              <KeyPointCard key={`${point}-${index}`} point={point} index={index} />
+            ))}
+          </div>
+        ) : (
+          <p
+            style={{
+              fontFamily: "var(--font-body), sans-serif",
+              fontSize: 14,
+              color: "var(--text-tertiary)",
+            }}
+          >
+            No specific clauses extracted.
+          </p>
+        )}
+      </div>
+
+      {/* ====== SECTION 4: WARNINGS — Full width ====== */}
+      <motion.div
+        initial={{ opacity: 0, x: -16 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        style={{ marginBottom: 8 }}
+      >
+        {result.warnings.length > 0 ? (
+          <>
+            <p
+              style={{
+                fontFamily: "var(--font-body), sans-serif",
+                fontWeight: 500,
+                fontSize: 11,
+                color: "var(--risk-high)",
+                textTransform: "uppercase",
+                letterSpacing: "0.15em",
+                marginBottom: 16,
+              }}
+            >
+              ⚠ WARNINGS
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {result.warnings.map((warning, index) => (
                 <WarningCard key={`${warning}-${index}`} warning={warning} index={index} />
               ))}
             </div>
-          ) : (
-            <p className="mt-3 inline-flex items-center gap-2 text-sm text-[color:var(--green-text)]">
-              <CheckCircle2 size={16} /> No critical warnings found
-            </p>
-          )}
-        </article>
-      </div>
-    </motion.section>
+          </>
+        ) : (
+          <div
+            style={{
+              background: "var(--risk-low-bg)",
+              border: "1px solid rgba(45,181,93,0.2)",
+              borderRadius: 12,
+              padding: "16px 20px",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <CheckCircle2 size={16} style={{ color: "var(--risk-low)" }} />
+            <span
+              style={{
+                fontFamily: "var(--font-body), sans-serif",
+                fontWeight: 400,
+                fontSize: 14,
+                color: "var(--green-text)",
+              }}
+            >
+              No critical warnings found
+            </span>
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 }

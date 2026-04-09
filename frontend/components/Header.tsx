@@ -44,7 +44,7 @@ export default function Header({ onDemoMode, isDemoRunning = false }: HeaderProp
             </svg>
           </span>
           <div>
-            <p className="font-display text-2xl font-semibold leading-none text-[color:var(--text-gold)]">ClauseClarity</p>
+            <p className="font-display text-2xl font-semibold leading-none text-[color:var(--text-gold)]">UnLegalize</p>
             <p className="text-[11px] font-light tracking-[0.08em] text-[color:var(--text-secondary)]">
               Built for Kalpathon 2.0
             </p>
@@ -53,19 +53,10 @@ export default function Header({ onDemoMode, isDemoRunning = false }: HeaderProp
 
         <div className="flex items-center gap-2">
           <span className="hidden rounded-full border border-[color:var(--border-mid)] px-3 py-1 text-[11px] font-medium text-[color:var(--text-gold)] md:inline-flex">
-            Powered by fine-tuned TinyLlama
+            Powered by fine-tuned Gemma 3 270M
           </span>
 
-          {onDemoMode ? (
-            <button
-              type="button"
-              onClick={onDemoMode}
-              disabled={isDemoRunning}
-              className="rounded-full border border-[color:var(--gold-bright)] bg-[rgba(240,180,41,0.12)] px-3 py-1 text-[11px] font-semibold text-[color:var(--text-gold)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isDemoRunning ? "Demo Running..." : "Demo Mode"}
-            </button>
-          ) : null}
+
 
           <span className="hidden rounded-full border border-[rgba(95,217,138,0.45)] bg-[rgba(95,217,138,0.12)] px-3 py-1 text-[10px] font-medium text-[color:var(--green-text)] lg:inline-flex">
             Model loaded locally - no internet required

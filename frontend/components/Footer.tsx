@@ -8,10 +8,10 @@ export default function Footer() {
     <footer id="footer" className="border-t border-[color:var(--border-dark)] bg-[color:var(--bg-void)] py-16">
       <div className="mx-auto max-w-6xl px-4 md:px-8">
         <div className="mb-8 grid grid-cols-2 gap-2 rounded-xl border border-[color:var(--border-mid)] bg-[rgba(95,217,138,0.08)] p-3 text-center text-xs text-[color:var(--green-text)] md:grid-cols-4">
-          <p>113 clauses trained</p>
-          <p>91.33 quality score</p>
-          <p>Runs 100% offline</p>
-          <p>Model: TinyLlama + LoRA</p>
+          <p>270M parameter model</p>
+          <p>India-specific training data</p>
+          <p>Runs 100% locally</p>
+          <p>Model: Gemma 3 270M · LoRA</p>
         </div>
 
         <ScrollReveal className="relative mx-auto mb-10 h-[200px] w-[200px] opacity-30">
@@ -59,7 +59,7 @@ export default function Footer() {
           <div className="lg:text-right">
             <p className="text-xs uppercase tracking-[0.12em] text-[color:var(--text-tertiary)]">Stack</p>
             <div className="mt-3 space-y-1 text-sm text-[color:var(--text-tertiary)]">
-              <p>⚡ TinyLlama 1.1B · LoRA Fine-tuned</p>
+              <p>⚡ Gemma 3 270M · LoRA Fine-tuned</p>
               <p>🐍 FastAPI · Python backend</p>
               <p>Next.js 14 . TypeScript</p>
               <p>Three.js . Framer Motion</p>
