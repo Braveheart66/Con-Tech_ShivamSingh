@@ -11,7 +11,10 @@ backend/venv/
 
 # Environment files
 .env
+.env.*
+!.env.example
 backend/.env
+frontend/.env.local
 
 # Model and output artifacts
 backend/outputs/gemma-3-270m-rental-lora/

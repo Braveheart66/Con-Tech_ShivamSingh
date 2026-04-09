@@ -189,26 +189,42 @@ def main() -> None:
     log("Loading base model...")
     model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
 
+    # LoRA config optimized for small dataset fine-tuning
+    # - Higher r=32 for more capacity to learn clause simplification patterns
+    # - Target more modules (q, k, v, o projections) for better results
+    # - Lower dropout to prevent underfitting on small data
     peft_config = LoraConfig(
-        r=16,
-        lora_alpha=32,
-        lora_dropout=0.05,
+        r=32,
+        lora_alpha=64,
+        lora_dropout=0.03,
         bias="none",
         task_type="CAUSAL_LM",
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
     )
 
+    # Training args tuned for small high-quality dataset:
+    # - 5 epochs (more passes needed for small data)
+    # - Lower learning rate (1e-4) to avoid overfitting
+    # - Warmup ratio to stabilize early training
+    # - Cosine schedule for better convergence
+    # - More frequent saves
     training_args = TrainingArguments(
         output_dir=str(OUTPUT_DIR),
         per_device_train_batch_size=2,
         gradient_accumulation_steps=4,
-        learning_rate=2e-4,
-        num_train_epochs=3,
-        logging_steps=10,
-        save_steps=100,
+        learning_rate=1e-4,
+        num_train_epochs=5,
+        warmup_ratio=0.1,
+        lr_scheduler_type="cosine",
+        logging_steps=5,
+        save_steps=50,
+        save_total_limit=3,
         report_to="none",
         bf16=torch.cuda.is_available(),
         fp16=False,
         remove_unused_columns=False,
+        weight_decay=0.01,
+        max_grad_norm=0.5,
     )
 
     trainer = SFTTrainer(

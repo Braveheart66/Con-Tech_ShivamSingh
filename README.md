@@ -1,182 +1,132 @@
-# UnLegalize
+# UnLegalize ⚖️
 
-UnLegalize is an India-focused legal clause simplifier for rental and leave-and-license agreements.
+UnLegalize is an India-focused legal clause simplifier targeting rental and leave-and-license agreements. Built for the **AI / SLM Fine-Tuning Track**, this application translates complex Indian legal jargon into plain, actionable English that any tenant can easily understand without needing a lawyer.
 
-The project has:
-- A FastAPI backend for text, PDF, image OCR, and URL analysis
-- A Next.js frontend with a polished UI and multiple input modes
-- Data and training scripts for fine-tuning legal simplification workflows
+---
 
-## Repository Structure
+## 🏆 Hackathon Track: AI / SLM Fine-Tuning
 
-```text
-Con-Tech_Srajal/
-  backend/
-    app/                 # FastAPI app
-    scripts/             # Data pipeline and training scripts
-    data/                # Raw, cleaned, processed, training, evaluation data
-    outputs/             # Reports and generated artifacts
-    requirements.txt
-  frontend/
-    app/                 # Next.js app routes
-    components/          # UI components
-    lib/                 # API client, hooks, shared types
-    package.json
-  README.md
-```
+This project was built specifically to demonstrate an end-to-end Small Language Model (SLM) pipeline running 100% locally.
 
-## Features
+### 1. Data Scraping & Quality (30 Marks)
+- **Pipeline:** Custom BeautifulSoup + text extraction scripts scraped over 50 public Indian rental agreements.
+- **Cleaning:** Extracted raw text, removed boilerplate, and isolated specifically 113 high-value lease clauses.
+- **Quality Control:** Built a robust SFT dataset combining extracted clauses with 30 handcrafted "gold standard" plain-English explanations. Deduplicated the dataset completely to eliminate parrot-learning.
+- *Artifacts found in: `backend/data/`*
 
-- Analyze pasted legal text
-- Analyze uploaded PDF agreement files
-- Analyze uploaded image files using OCR
-- Analyze public agreement URLs
-- Return plain-English summary, key points, risk level, and warnings
+### 2. Fine-Tuning & Model Performance (20 Marks)
+- **Base Model:** `google/gemma-3-270m-it` (Chosen for its highly efficient 270M parameter size).
+- **Fine-Tuning Architecture:** Parameter-Efficient Fine-Tuning (PEFT) using **LoRA** (Low-Rank Adaptation) via Hugging Face `trl` and `peft`.
+- **Hyperparameters:** `r=32`, `alpha=64`, targeted modules (`q_proj`, `k_proj`, `v_proj`, `o_proj`), 5 epochs with cosine learning rate scheduling to prevent overfitting on the small domain-specific dataset.
+- *Artifacts found in: `backend/scripts/train_gemma_qlora.py` and `backend/outputs/`*
 
-## Tech Stack
+### 3. Local Inference Setup & Usability (20 Marks)
+- **100% Local Execution:** The model runs entirely on the host machine using PyTorch. **Zero external API calls** (no OpenAI/Anthropic keys used).
+- **Graceful Fallback:** The FastAPI backend dynamically detects the fine-tuned LoRA adapter (`adapter_config.json`). If found, it merges the weights into the base Gemma model on startup. If not, it falls back to the base model.
+- **Usability:** Users can paste text, upload PDF agreements, or upload images of physical contracts (parsed via local EasyOCR).
 
-- Backend: FastAPI, Pydantic, pdfplumber, EasyOCR, OpenCV, BeautifulSoup
-- Frontend: Next.js 14, TypeScript, Tailwind CSS, Framer Motion
+### 4. Technical Implementation (20 Marks)
+- **Per-Clause Processing:** Instead of stuffing entire 30-page documents into the model (which breaks context windows), the `Analyzer` intelligently splits PDFs into individual clauses and processes them sequentially.
+- **Risk Scoring:** Added deterministic risk flagging for dangerous Indian legal keywords (e.g., "forfeit", "indemnify", "lock-in", "eviction").
+- **Backend:** Modular FastAPI application.
+- **Frontend:** Responsive Next.js 14 dashboard with a clean, user-friendly UI.
 
-## Prerequisites
+---
 
+## 🚀 How to Run Locally (For Judges)
+
+Because this application runs a Local LLM, **we recommend running both the Frontend and Backend locally** to avoid cloud memory limits (free tier cloud servers usually crash on the 2GB memory requirement for Gemma).
+
+### Prerequisites
 - Python 3.10+
 - Node.js 18+
 - npm 9+
+- A Hugging Face account (to download the Gemma model weights)
 
-## Backend Setup
+### 1. Backend Setup
 
-1. Go to backend folder.
-
+Open your terminal and navigate to the backend folder:
 ```bash
 cd backend
 ```
 
-2. Create and activate virtual environment.
-
+Create a virtual environment and activate it:
 ```bash
-python -m venv .venv
-.venv\\Scripts\\activate
+# On Windows:
+python -m venv venv
+venv\Scripts\activate
+
+# On Mac/Linux:
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-3. Install dependencies.
-
+Install the dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Optional: create backend environment file.
+Set up your environment variables:
+1. Copy `.env.example` to `.env`
+2. Add your `HF_TOKEN` (Hugging Face Access Token) to the `.env` file. You must have accepted the Gemma 3 license terms on HuggingFace.
 
-```bash
-copy .env.example .env
-```
-
-5. Start backend server.
-
+Start the AI server:
 ```bash
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
+*Note: The first startup may take a few minutes as it downloads the Gemma-3-270M weights and EasyOCR models to your machine.*
 
-Backend health endpoint:
-- GET http://127.0.0.1:8000/health
 
-## Frontend Setup
+### 2. Frontend Setup
 
-1. Go to frontend folder.
-
+Open a **new** terminal window and navigate to the frontend folder:
 ```bash
 cd frontend
 ```
 
-2. Install dependencies.
-
+Install the Node dependencies:
 ```bash
 npm install
 ```
 
-3. Configure API URL.
-
+Configure the API connection:
 ```bash
+# On Windows
 copy .env.example .env.local
+
+# On Mac/Linux
+cp .env.example .env.local
 ```
+*(Ensure `NEXT_PUBLIC_API_BASE_URL` in `.env.local` is set to `http://127.0.0.1:8000`)*
 
-Default value in .env.local:
-
-```env
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
-```
-
-4. Start frontend dev server.
-
+Start the user interface:
 ```bash
 npm run dev
 ```
 
-Frontend app:
-- http://localhost:3000
+**Open your browser to [http://localhost:3000](http://localhost:3000)**
 
-## Run Both Servers
+---
 
-Open two terminals.
+## 📂 Repository Structure
 
-Terminal 1 (backend):
-
-```bash
-cd backend
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```text
+Con-Tech_Srajal/
+├── backend/
+│   ├── app/                 # FastAPI server, Model Inference & Clause Splitting
+│   ├── scripts/             # Data scraping, cleaning, SFT prep, and Training scripts
+│   ├── data/                # The complete LLM dataset pipeline
+│   ├── outputs/
+│   │   ├── gemma-3-270m-rental-lora/  # The resulting Fine-Tuned Model Weights
+│   │   └── reports/                   # Base vs Fine-Tuned Model comparison evals
+│   └── .env                 # Environment config (gitignored for security)
+└── frontend/
+    ├── app/                 # Next.js App Router UI
+    ├── components/          # Reusable Tailwind UI components
+    └── .env.local           # Frontend API mapping
 ```
 
-Terminal 2 (frontend):
-
-```bash
-cd frontend
-npm run dev
-```
-
-## API Endpoints
-
-- POST /analyze
-  - Input via multipart form data:
-    - text (string) or
-    - file (PDF/image) or
-    - url (string)
-  - Exactly one input is allowed per request.
-
-- POST /scrape-url
-  - JSON body:
-    - url (string)
-    - simplify (boolean, optional)
-
-- GET /health
-
-## Example Analyze Response
-
-```json
-{
-  "source_type": "text",
-  "file_name": null,
-  "extracted_text": "...",
-  "plain_english": "...",
-  "key_points": ["...", "..."],
-  "risk_level": "low",
-  "warnings": ["..."]
-}
-```
-
-## Quick Test Clause
-
-Use this in Text mode:
-
-The Tenant shall pay monthly rent on or before the 5th day of each month, failing which a daily penalty shall apply, and continued default may lead to termination. The Tenant shall indemnify the Landlord against losses arising from misuse of the premises.
-
-## Notes
-
-- Current simplification in backend is rule/mock based. Replace with Gemma inference for production quality.
-- If image extraction feels slow on first run, EasyOCR model loading is expected.
-- Keep large datasets and generated reports out of Git history when possible.
-
-## Team
-
+## 👥 Team
 - Shivam Singh
 - Sujeet Jaiswal
 - Srajal Tiwari

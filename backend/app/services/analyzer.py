@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Optional
 
@@ -8,9 +9,11 @@ from app.services.clean_text import clean_extracted_text
 from app.services.extract_image import extract_text_from_image_bytes
 from app.services.extract_pdf import extract_text_from_pdf_bytes
 from app.services.scrape_web import scrape_text_from_url
-from app.services.simplify import simplify_legal_text
+from app.services.simplify import simplify_clauses, simplify_legal_text
 from app.services.split_clauses import split_into_clauses
 from app.utils.file_validation import validate_upload_file
+
+logger = logging.getLogger(__name__)
 
 
 async def analyze_input(
@@ -61,7 +64,14 @@ async def analyze_input(
 
     cleaned_text = clean_extracted_text(extracted_text)
     clauses = split_into_clauses(cleaned_text)
-    simplification = simplify_legal_text(cleaned_text)
+
+    # Simplify per-clause if we have clauses, otherwise simplify the whole text
+    if clauses:
+        logger.info("Simplifying %d clauses individually", len(clauses))
+        simplification = simplify_clauses(clauses)
+    else:
+        logger.info("No clauses detected, simplifying full text")
+        simplification = simplify_legal_text(cleaned_text)
 
     warnings = list(simplification.get("warnings", []))
     if not clauses:
