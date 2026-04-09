@@ -1,125 +1,133 @@
-## Kalpathon Hackathon Submission
+# UnLegalize ⚖️
 
-### Team Name
-Con-Tech
-
-### Team ID
-KPT007
-
-### Project Name
-UnLegalize
-
-### Selected Track
-AI / SLM Fine-Tuning
-
-### Selected Problem Statement (PS)
-Legal clause simplifier for rental agreements
-
-### Team Leader
-Name: Shivam Singh  
-Phone: 9555268266
-
-### Team Members
-Sujeet Jaiswal  
-Srajal Tiwari  
-Trijal Kumar Anand
+UnLegalize is an India-focused legal clause simplifier targeting rental and leave-and-license agreements. Built for the **AI / SLM Fine-Tuning Track**, this application translates complex Indian legal jargon into plain, actionable English that any tenant can easily understand without needing a lawyer.
 
 ---
 
-## Frontend MVP (Next.js)
+## 🏆 Hackathon Track: AI / SLM Fine-Tuning
 
-This repository now includes a full frontend MVP in the `frontend/` folder for the India-focused Legal Clause Simplifier.
+This project was built specifically to demonstrate an end-to-end Small Language Model (SLM) pipeline running 100% locally.
 
-### What this frontend does
-- Paste legal clause text and simplify it
-- Upload rental agreement PDF and simplify it
-- Upload rental agreement image and simplify it
-- Submit a public URL for scraping and simplification
-- Display extracted text, plain-English meaning, key points, risk level, and warnings
+### 1. Data Scraping & Quality (30 Marks)
+- **Pipeline:** Custom BeautifulSoup + text extraction scripts scraped over 50 public Indian rental agreements.
+- **Cleaning:** Extracted raw text, removed boilerplate, and isolated specifically 113 high-value lease clauses.
+- **Quality Control:** Built a robust SFT dataset combining extracted clauses with 30 handcrafted "gold standard" plain-English explanations. Deduplicated the dataset completely to eliminate parrot-learning.
+- *Artifacts found in: `backend/data/`*
 
-### Backend assumptions
-- `POST /analyze` accepts `text` (form field) or `file` (multipart)
-- `POST /scrape-url` accepts `url` (JSON or form field)
-- API response shape:
+### 2. Fine-Tuning & Model Performance (20 Marks)
+- **Base Model:** `google/gemma-3-270m-it` (Chosen for its highly efficient 270M parameter size).
+- **Fine-Tuning Architecture:** Parameter-Efficient Fine-Tuning (PEFT) using **LoRA** (Low-Rank Adaptation) via Hugging Face `trl` and `peft`.
+- **Hyperparameters:** `r=32`, `alpha=64`, targeted modules (`q_proj`, `k_proj`, `v_proj`, `o_proj`), 5 epochs with cosine learning rate scheduling to prevent overfitting on the small domain-specific dataset.
+- *Artifacts found in: `backend/scripts/train_gemma_qlora.py` and `backend/outputs/`*
 
-```json
-{
-	"source_type": "text",
-	"file_name": null,
-	"extracted_text": "...",
-	"plain_english": "...",
-	"key_points": ["...", "..."],
-	"risk_level": "low",
-	"warnings": ["..."]
-}
+### 3. Local Inference Setup & Usability (20 Marks)
+- **100% Local Execution:** The model runs entirely on the host machine using PyTorch. **Zero external API calls** (no OpenAI/Anthropic keys used).
+- **Graceful Fallback:** The FastAPI backend dynamically detects the fine-tuned LoRA adapter (`adapter_config.json`). If found, it merges the weights into the base Gemma model on startup. If not, it falls back to the base model.
+- **Usability:** Users can paste text, upload PDF agreements, or upload images of physical contracts (parsed via local EasyOCR).
+
+### 4. Technical Implementation (20 Marks)
+- **Per-Clause Processing:** Instead of stuffing entire 30-page documents into the model (which breaks context windows), the `Analyzer` intelligently splits PDFs into individual clauses and processes them sequentially.
+- **Risk Scoring:** Added deterministic risk flagging for dangerous Indian legal keywords (e.g., "forfeit", "indemnify", "lock-in", "eviction").
+- **Backend:** Modular FastAPI application.
+- **Frontend:** Responsive Next.js 14 dashboard with a clean, user-friendly UI.
+
+---
+
+## 🚀 How to Run Locally (For Judges)
+
+Because this application runs a Local LLM, **we recommend running both the Frontend and Backend locally** to avoid cloud memory limits (free tier cloud servers usually crash on the 2GB memory requirement for Gemma).
+
+### Prerequisites
+- Python 3.10+
+- Node.js 18+
+- npm 9+
+- A Hugging Face account (to download the Gemma model weights)
+
+### 1. Backend Setup
+
+Open your terminal and navigate to the backend folder:
+```bash
+cd backend
 ```
 
-### Frontend stack
-- Next.js (App Router)
-- TypeScript
-- Tailwind CSS
+Create a virtual environment and activate it:
+```bash
+# On Windows:
+python -m venv venv
+venv\Scripts\activate
 
-### Project structure
-
-```text
-frontend/
-	app/
-		globals.css
-		layout.tsx
-		page.tsx
-	components/
-		ExampleClauses.tsx
-		FileUploadForm.tsx
-		Header.tsx
-		InputTabs.tsx
-		LoadingState.tsx
-		ResultPanel.tsx
-		RiskBadge.tsx
-		TextInputForm.tsx
-		UrlScrapeForm.tsx
-	lib/
-		api.ts
-		types.ts
-	public/
-	.env.example
-	next-env.d.ts
-	next.config.mjs
-	package.json
-	postcss.config.js
-	tailwind.config.ts
-	tsconfig.json
+# On Mac/Linux:
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-### Environment variable
-
-Create `frontend/.env.local` with:
-
-```env
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+Install the dependencies:
+```bash
+pip install -r requirements.txt
 ```
 
-You can copy from `frontend/.env.example`.
+Set up your environment variables:
+1. Copy `.env.example` to `.env`
+2. Add your `HF_TOKEN` (Hugging Face Access Token) to the `.env` file. You must have accepted the Gemma 3 license terms on HuggingFace.
 
-### Run the frontend
+Start the AI server:
+```bash
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+*Note: The first startup may take a few minutes as it downloads the Gemma-3-270M weights and EasyOCR models to your machine.*
 
+
+### 2. Frontend Setup
+
+Open a **new** terminal window and navigate to the frontend folder:
 ```bash
 cd frontend
+```
+
+Install the Node dependencies:
+```bash
 npm install
+```
+
+Configure the API connection:
+```bash
+# On Windows
+copy .env.example .env.local
+
+# On Mac/Linux
+cp .env.example .env.local
+```
+*(Ensure `NEXT_PUBLIC_API_BASE_URL` in `.env.local` is set to `http://127.0.0.1:8000`)*
+
+Start the user interface:
+```bash
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+**Open your browser to [http://localhost:3000](http://localhost:3000)**
 
-### Demo-friendly flow
-1. Start with `Paste Text` and use one of the quick example clauses.
-2. Show the plain-English explanation and risk badge in the result panel.
-3. Switch to PDF/Image modes and upload a sample agreement.
-4. Optionally show URL scraping mode for a public agreement page.
+---
 
-### Notes for developers
-- API helpers are centralized in `frontend/lib/api.ts`.
-- Shared types are in `frontend/lib/types.ts`.
-- Input mode UI and forms are modular so new modes can be added quickly.
-- Main state orchestration (mode, loading, errors, result, reset) is in `frontend/app/page.tsx`.
+## 📂 Repository Structure
 
+```text
+Con-Tech_Srajal/
+├── backend/
+│   ├── app/                 # FastAPI server, Model Inference & Clause Splitting
+│   ├── scripts/             # Data scraping, cleaning, SFT prep, and Training scripts
+│   ├── data/                # The complete LLM dataset pipeline
+│   ├── outputs/
+│   │   ├── gemma-3-270m-rental-lora/  # The resulting Fine-Tuned Model Weights
+│   │   └── reports/                   # Base vs Fine-Tuned Model comparison evals
+│   └── .env                 # Environment config (gitignored for security)
+└── frontend/
+    ├── app/                 # Next.js App Router UI
+    ├── components/          # Reusable Tailwind UI components
+    └── .env.local           # Frontend API mapping
+```
 
+## 👥 Team
+- Shivam Singh
+- Sujeet Jaiswal
+- Srajal Tiwari
+- Trijal Kumar Anand

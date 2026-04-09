@@ -1,0 +1,41 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+backend/venv/
+
+# Environment files
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env.local
+
+# Model and output artifacts
+backend/outputs/gemma-3-270m-rental-lora/
+backend/outputs/*.bin
+backend/outputs/*.pt
+backend/outputs/*.pth
+backend/outputs/*.ckpt
+backend/outputs/*.safetensors
+backend/outputs/*.onnx
+backend/outputs/*.gguf
+
+# Data artifacts (optional to track for repo cleanliness)
+backend/data/raw/
+backend/data/cleaned/
+backend/data/processed/
+backend/data/training/
+backend/data/evaluation/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db

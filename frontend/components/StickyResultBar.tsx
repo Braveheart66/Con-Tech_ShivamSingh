@@ -12,7 +12,7 @@ interface StickyResultBarProps {
 function sourceIcon(sourceType: string) {
   if (sourceType === "pdf") return File;
   if (sourceType === "image") return FileImage;
-  if (sourceType === "url") return Link2;
+  if (sourceType === "url" || sourceType === "web_url") return Link2;
   return FileText;
 }
 

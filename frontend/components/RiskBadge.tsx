@@ -9,11 +9,11 @@ interface RiskBadgeProps {
 function normalize(level: string): "low" | "medium" | "high" {
   const normalized = level.toLowerCase();
 
-  if (normalized === "high") {
+  if (normalized === "high" || normalized.includes("high")) {
     return "high";
   }
 
-  if (normalized === "medium") {
+  if (normalized === "medium" || normalized.includes("medium")) {
     return "medium";
   }
 
