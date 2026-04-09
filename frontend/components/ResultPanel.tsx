@@ -123,19 +123,21 @@ export default function ResultPanel({ result }: ResultPanelProps) {
           </div>
         </article>
 
-        <article className="relative overflow-hidden rounded-xl border border-[color:var(--border-dark)] bg-[color:var(--bg-surface)] p-5">
+        <article className="relative overflow-hidden rounded-xl border border-[color:var(--gold-mid)] bg-gradient-to-br from-[rgba(240,180,41,0.08)] to-[rgba(20,29,23,0.95)] p-6 shadow-[0_0_30px_rgba(240,180,41,0.15)] backdrop-blur-md">
           <span className="pointer-events-none absolute -left-6 -top-8 font-display text-[200px] leading-none text-white/5">
             "
           </span>
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[color:var(--gold-bright)] to-transparent opacity-70"></div>
+          
           <div className="relative z-[1]">
-            <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--text-gold)]">
-              <Sparkles size={12} /> Plain English
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(240,180,41,0.1)] px-3 py-1 text-[11px] uppercase tracking-[0.1em] text-[color:var(--gold-bright)] font-semibold shadow-inner">
+              <Sparkles size={12} className="animate-pulse" /> AI Translated to Plain English
             </p>
             <motion.p
-              initial={{ opacity: 0, filter: "blur(4px)" }}
-              animate={{ opacity: 1, filter: "blur(0px)" }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="mt-3 border-l-4 border-[color:var(--risk-low)] pl-4 text-2xl font-bold leading-9 text-[color:var(--text-primary)]"
+              initial={{ opacity: 0, filter: "blur(8px)", y: 10 }}
+              animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+              className="mt-5 border-l-4 border-[color:var(--gold-bright)] pl-5 text-2xl md:text-3xl font-display leading-[1.4] tracking-tight text-white drop-shadow-md"
             >
               {result.plain_english || "No plain-English explanation available."}
             </motion.p>
